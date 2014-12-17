@@ -8,10 +8,15 @@ function sqlTableDump (options, cb) {
   cb = (typeof cb === "function") ? cb : null;
   var err = null, query, columnstr;
   if(!options.connectionString) {
-    err = "This script cannot run without a connection string";
-    cb(err, options);
-    return;
+    err = new Error("This script cannot run without a connection string");
+    if(cb) {
+        cb(err);
+        return;
+    } else {
+        throw err;
+    }
   }
+  
   options.columns = (options.columns) ? (options.columns instanceof Array) ? options.columns.join(",") : options.columns : "*";
   
   query = "SELECT "+options.columns+" FROM "+options.table+" WHERE 1=1";
@@ -43,7 +48,7 @@ function sqlTableDump (options, cb) {
         rowStr = ((i>0) ? "UNION ALL\n":"") + "SELECT ";
         for(colIndex=0; colIndex<exportColumns.length; colIndex++) {
           cellVal = results.rows[i][exportColumns[colIndex].index];
-          cellVal = (typeof cellVal === 'string') ? "'"+cellVal+"'" 
+          cellVal = (typeof cellVal === 'string') ? "'"+cellVal.replace(/'/g,"''")+"'" 
                   : (cellVal instanceof Date)  ? jsDateToSqlDate(cellVal) : cellVal;
                   
           rowStr += ((colIndex>0) ? ",":"") + cellVal;
